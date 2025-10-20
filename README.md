@@ -1,7 +1,7 @@
 <h1 align="center">Hi, I'm Kapil</h1>
 <h3 align="center">Full Stack AI Engineer</h3>
 
-### 🧠 Full Stack AI Engineer – Tech Stack
+### 🧠 Tech Stack
 
 #### 🧩 Languages
 <p align="left">
