@@ -1,5 +1,5 @@
 <h1 align="center">Hi, I'm Kapil</h1>
-<h3 align="center">Full Stack AI Engineer</h3>
+<h3 align="center">Full Stack AI Developer</h3>
 
 ### 🧠 Tech Stack
 
