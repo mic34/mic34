@@ -62,8 +62,7 @@
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/kubernetes/kubernetes-plain.svg" alt="Kubernetes" width="40" height="40"/>
   <img src="https://www.vectorlogo.zone/logos/git-scm/git-scm-icon.svg" alt="Git" width="40" height="40"/>
   <img src="https://raw.githubusercontent.com/devicons/devicon/master/icons/linux/linux-original.svg" alt="Linux" width="40" height="40"/>
-  <img src="https://cdn.worldvectorlogo.com/logos/apache-spark-1.svg" alt="Apache Spark" width="40" height="40"/>
-  <img src="https://cdn.worldvectorlogo.com/logos/apache-airflow.svg" alt="Apache Airflow" width="40" height="40"/>
+
 
 </p>
 
