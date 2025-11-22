@@ -22,7 +22,7 @@ jobs:
           set -euo pipefail
 
 # Prefer PAT if provided (useful if you need user-scoped endpoints); else use GITHUB_TOKEN
-if [ -n "${PAT:-}" ]; then
+if [ "${PAT:-}" ]; then
   API_TOKEN="$PAT"
 else
   API_TOKEN="${GITHUB_TOKEN:-}"
