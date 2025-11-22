@@ -1,0 +1,44 @@
+name: Update Profile Stats
+on:
+  schedule:
+    - cron: "0 * * * *"   # update every hour
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Get stats and update README
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      run: |
+        TOTAL_REPOS=$(curl -H "Authorization: token $GH_TOKEN" \
+          https://api.github.com/user/repos?per_page=1 | jq length)
+
+        PUBLIC_REPOS=$(curl -H "Authorization: token $GH_TOKEN" \
+          https://api.github.com/user | jq .public_repos)
+
+        PRIVATE_REPOS=$((TOTAL_REPOS - PUBLIC_REPOS))
+
+        echo "Total Repositories: $TOTAL_REPOS" > stats.txt
+        echo "Public Repositories: $PUBLIC_REPOS" >> stats.txt
+        echo "Private Repositories: $PRIVATE_REPOS" >> stats.txt
+
+        # Count ALL comments (issues + PRs)
+        COMMENTS=$(curl -H "Authorization: token $GH_TOKEN" \
+          https://api.github.com/search/issues?q=author:YOUR_USERNAME | jq .total_count)
+
+        echo "Total Comments: $COMMENTS" >> stats.txt
+
+        # Insert these stats into README
+        sed -i '/<!--STATS-->/r stats.txt' README.md
+
+    - name: Commit changes
+      run: |
+        git config user.email "actions@github.com"
+        git config user.name "GitHub Actions"
+        git add README.md
+        git commit -m "Update stats" || echo "No changes"
+        git push
