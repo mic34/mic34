@@ -1,46 +1,121 @@
 name: Update Profile Stats
+
 on:
   schedule:
     - cron: "0 * * * *"   # update every hour
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   update:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # built-in token (or set a secret)
+      PAT: ${{ secrets.PAT }}                     # optional Personal Access Token for push
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Get stats and update README
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        PAT: ${{ secrets.PAT }}
-      run: |
-        TOTAL_REPOS=$(curl -H "Authorization: token $GH_TOKEN" \
-          https://api.github.com/user/repos?per_page=1 | jq length)
+      - name: Get stats and update README
+        run: |
+          set -euo pipefail
 
-        PUBLIC_REPOS=$(curl -H "Authorization: token $GH_TOKEN" \
-          https://api.github.com/user | jq .public_repos)
+          # Pick the token to use for API requests (prefer GITHUB_TOKEN if present)
+          if [ -n "${GITHUB_TOKEN:-}" ]; then
+            API_TOKEN="$GITHUB_TOKEN"
+          else
+            echo "GITHUB_TOKEN is not set; exiting"
+            exit 1
+          fi
 
-        PRIVATE_REPOS=$((TOTAL_REPOS - PUBLIC_REPOS))
+          # Get authenticated user's login
+          USER_JSON=$(curl -s -H "Authorization: token ${API_TOKEN}" "https://api.github.com/user")
+          USER_LOGIN=$(echo "$USER_JSON" | jq -r .login)
+          if [ -z "$USER_LOGIN" ] || [ "$USER_LOGIN" = "null" ]; then
+            echo "Failed to read user login from /user. Response:"
+            echo "$USER_JSON"
+            exit 1
+          fi
+          echo "Detected user: $USER_LOGIN"
 
-        echo "Total Repositories: $TOTAL_REPOS" > stats.txt
-        echo "Public Repositories: $PUBLIC_REPOS" >> stats.txt
-        echo "Private Repositories: $PRIVATE_REPOS" >> stats.txt
+          # Total repos: use search API which returns total_count
+          TOTAL_REPOS=$(curl -s -H "Authorization: token ${API_TOKEN}" \
+            "https://api.github.com/search/repositories?q=user:${USER_LOGIN}" \
+            | jq .total_count)
 
-        # Count ALL comments (issues + PRs)
-        COMMENTS=$(curl -H "Authorization: token $GH_TOKEN" \
-          https://api.github.com/search/issues?q=author:YOUR_USERNAME | jq .total_count)
+          # Public repos: use /users/USERNAME which has public_repos
+          PUBLIC_REPOS=$(curl -s -H "Authorization: token ${API_TOKEN}" \
+            "https://api.github.com/users/${USER_LOGIN}" \
+            | jq .public_repos)
 
-        echo "Total Comments: $COMMENTS" >> stats.txt
+          # Private repos (derived). If public_repos is null, set to 0
+          PUBLIC_REPOS=${PUBLIC_REPOS:-0}
+          PRIVATE_REPOS=$((TOTAL_REPOS - PUBLIC_REPOS))
 
-        # Insert these stats into README
-        sed -i '/<!--STATS-->/r stats.txt' README.md
+          # Count ALL comments (issues + PRs authored by user) via search/issues
+          COMMENTS=$(curl -s -H "Authorization: token ${API_TOKEN}" \
+            "https://api.github.com/search/issues?q=author:${USER_LOGIN}" \
+            | jq .total_count)
 
-    - name: Commit changes
-      run: |
-        git config user.email "rot45951@gmail.com"
-        git config user.name "mic34"
-        git remote set-url origin https://x-access-token:${PAT}@github.com/mic34/mic34.git
-        git add README.md
-        git commit -m "Update stats" || echo "No changes"
-        git push
+          # Write stats file
+          {
+            echo "Total Repositories: $TOTAL_REPOS"
+            echo "Public Repositories: $PUBLIC_REPOS"
+            echo "Private Repositories: $PRIVATE_REPOS"
+            echo "Total Comments: $COMMENTS"
+          } > stats.txt
+
+          # Replace block between markers in README
+          # Expect README to contain:
+          # <!--STATS_START-->
+          # (old stats here)
+          # <!--STATS_END-->
+          if grep -q "<!--STATS_START-->" README.md && grep -q "<!--STATS_END-->" README.md; then
+            awk -v statsfile="stats.txt" '
+              BEGIN {
+                inblock = 0
+                while ((getline line < statsfile) > 0) {
+                  stats[NR] = line
+                }
+                close(statsfile)
+              }
+              {
+                if ($0 ~ /<!--STATS_START-->/) {
+                  print $0
+                  for (i=1;i<=length(stats);i++) print stats[i]
+                  inblock = 1
+                  next
+                }
+                if ($0 ~ /<!--STATS_END-->/) {
+                  print $0
+                  inblock = 0
+                  next
+                }
+                if (!inblock) print $0
+              }
+            ' README.md > README.tmp && mv README.tmp README.md
+          else
+            # fallback: append with markers (only if markers not found)
+            echo "" >> README.md
+            echo "<!--STATS_START-->" >> README.md
+            cat stats.txt >> README.md
+            echo "<!--STATS_END-->" >> README.md
+          fi
+
+      - name: Commit changes
+        run: |
+          git config user.email "rot@gmail.com"
+          git config user.name "mic34"
+
+          # Choose push token: prefer PAT when provided (allows finer scopes / forks), else fallback to GITHUB_TOKEN
+          if [ -n "${PAT:-}" ]; then
+            git remote set-url origin https://x-access-token:${PAT}@github.com/${{ github.repository }}
+          else
+            # Using GITHUB_TOKEN in remote URL also works
+            git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
+          fi
+
+          git add README.md
+          git commit -m "Update stats" || echo "No changes to commit"
+          git push
