@@ -37,8 +37,8 @@ jobs:
 
     - name: Commit changes
       run: |
-        git config user.email "actions@github.com"
-        git config user.name "GitHub Actions"
+        git config user.email "rot45951@gmail.com"
+        git config user.name "mic34"
         git add README.md
         git commit -m "Update stats" || echo "No changes"
         git push
