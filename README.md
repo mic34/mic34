@@ -74,6 +74,10 @@
 ---
 
 <h4 align="center">GitHub Stats</h4>
+# My GitHub Stats
+
+<!--STATS-->
+
 <p align="center">
   <img src="https://github-readme-stats.vercel.app/api?username=mic34&show_icons=true&theme=transparent" alt="GitHub Stats" height="180"/>
   <img src="https://github-readme-streak-stats.herokuapp.com/?user=mic34&theme=transparent" alt="GitHub Streak" height="180"/>
