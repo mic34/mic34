@@ -74,21 +74,6 @@
 ---
 
 <h4 align="center">GitHub Stats</h4>
-# My GitHub Stats
-
-<!--STATS-->
-Total Repositories: 1
-Public Repositories: 1
-Private Repositories: 0
-Total Comments: null
-
-## My stats
-
-<!--STATS_START-->
-(generated stats will be placed here)
-<!--STATS_END-->
-
-
 <p align="center">
   <img src="https://github-readme-stats.vercel.app/api?username=mic34&show_icons=true&theme=transparent" alt="GitHub Stats" height="180"/>
   <img src="https://github-readme-streak-stats.herokuapp.com/?user=mic34&theme=transparent" alt="GitHub Streak" height="180"/>
